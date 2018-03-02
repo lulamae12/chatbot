@@ -1,5 +1,0 @@
-# A 64bit version of Python 3.6+ is required to run this program, as TensorFlow does not support 32bit.
-# Use 'pip install -r requirements.txt' to install the requirements
-pandas
-numpy
-tensorflow
