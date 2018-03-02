@@ -73,11 +73,11 @@ def textcleanup(text):
     text = re.sub(r"[-()\"#/@;:<>{}`+=~|.!?,]", "", text)
 
     return text
-#clean questions
+#cleaned up questions
 clean_questions = []
 for question in questions:
     clean_questions.append(textcleanup(question))
-#clean answers
+#cleaned up answers
 clean_answers = []
 for answer in answers:
     clean_answers.append(textcleanup(answer))
@@ -113,4 +113,22 @@ short_questions_temp = []
 short_answers_temp = []
 
 i = 0
-for questions
+for question in clean_questions:
+    if len(question.split()) >= min_line_length and len(question.split()) <= max_line_length:
+        short_questions_temp.append(question)
+        short_answers_temp.append(clean_answers[i])
+    i += 1
+
+# Filter out the answers that are too short/long
+short_questions = []
+short_answers = []
+
+i = 0
+for answer in short_answers_temp:
+    if len(answer.split()) >= min_line_length and len(answer.split()) <= max_line_length:
+        short_answers.append(answer)
+        short_questions.append(short_questions_temp[i])
+    i += 1
+print("Number of questions:", len(short_questions))
+print("Number of answers:", len(short_answers))
+print("% of data used: {}%".format(round(len(short_questions)/len(questions),4)*100))
