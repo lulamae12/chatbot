@@ -43,8 +43,8 @@ for i in range(limit, limit+5):
     print()
 
 #compare question/answer langth
-print(f"Question Length:" + len(questions))
-print(f"Answer Length:" + len(answers))
+print(f"Question Length:",len(questions))
+print(f"Answer Length:",len(answers))
 
 def textcleanup(text):
 #cleansup text by removing unnecessary characters like is and reformats.
@@ -98,3 +98,19 @@ for answer in clean_answers:
 
 # Creates a dataframe so that the values can be inspected
 lengths = pd.DataFrame(lengths, columns=['counts'])
+lengths.describe()
+print(np.percentile(lengths, 80))
+print(np.percentile(lengths, 85))
+print(np.percentile(lengths, 90))
+print(np.percentile(lengths, 95))
+print(np.percentile(lengths, 99))
+
+#cleans up querys that are to long/short
+min_line_length = 2
+max_line_length = 20
+
+short_questions_temp = []
+short_answers_temp = []
+
+i = 0
+for questions
