@@ -43,8 +43,8 @@ for i in range(limit, limit+5):
     print()
 
 #compare question/answer langth
-print(f"Question Length:",len(questions))
-print(f"Answer Length:",len(answers))
+print(f"Question Length:" + len(questions))
+print(f"Answer Length:" + len(answers))
 
 def textcleanup(text):
 #cleansup text by removing unnecessary characters like is and reformats.
@@ -73,3 +73,18 @@ def textcleanup(text):
     text = re.sub(r"[-()\"#/@;:<>{}`+=~|.!?,]", "", text)
 
     return text
+#clean questions
+clean_questions = []
+for question in questions:
+    clean_questions.append(textcleanup(question))
+#clean answers
+clean_answers = []
+for answer in answers:
+    clean_answers.append(textcleanup(answer))
+
+#more clean debug prints.
+limit = 0
+for i in range(limit, limit+5):
+    print(clean_questions[i])
+    print(clean_answers[i])
+    print()
