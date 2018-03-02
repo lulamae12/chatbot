@@ -122,7 +122,7 @@ for question in clean_questions:
 # Filter out the answers that are too short/long
 short_questions = []
 short_answers = []
-
+ 
 i = 0
 for answer in short_answers_temp:
     if len(answer.split()) >= min_line_length and len(answer.split()) <= max_line_length:
@@ -132,3 +132,6 @@ for answer in short_answers_temp:
 print("Number of questions:", len(short_questions))
 print("Number of answers:", len(short_answers))
 print("% of data used: {}%".format(round(len(short_questions)/len(questions),4)*100))
+
+
+#vocab
