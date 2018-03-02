@@ -41,3 +41,7 @@ for i in range(limit, limit+5):
     print(questions[i])
     print(answers[i])
     print()
+
+#compare question/answer langth
+print(f"Question Length:",len(questions))
+print(f"Answer Length:",len(answers))
