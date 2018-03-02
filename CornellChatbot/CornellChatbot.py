@@ -131,7 +131,7 @@ for answer in short_answers_temp:
     i += 1
 print("Number of questions:", len(short_questions))
 print("Number of answers:", len(short_answers))
-print("% of data used: {}%".format(round(len(short_questions)/len(questions),4)*100))
+print("% of total data used: {}%".format(round(len(short_questions)/len(questions),4)*100))
 
 
 #dictionary of frequently used vocab words
@@ -184,6 +184,13 @@ for word, count in vocab.items():
 # EOS = END OF STRING
 # UNK = UNKNOWN/WORD NOT IN VOCABUALRY
 # GO = START DECODING
+#padding/go/eos example
+#Q:"how are you?"
+#A:"i am fine."
+#Q : [ PAD, PAD, PAD, PAD, PAD, PAD, “?”, “you”, “are”, “How” ]
+#A : [ GO, “I”, “am”, “fine”, “.”, EOS, PAD, PAD, PAD, PAD ]
+#
+
 
 codes = ['<PAD>','<EOS>','<UNK>','<GO>']
 
@@ -200,3 +207,52 @@ print(len(questions_vocab_to_int))
 print(len(questions_int_to_vocab))
 print(len(answers_vocab_to_int))
 print(len(answers_int_to_vocab))
+
+#adds token at the end of answer to end it
+for i in range(len(short_answers)):
+    short_answers[i] += ' <EOS>'
+
+#change text to integer
+#replace unknown words in the vocabualry with UNK
+questions_int = []
+for question in short_questions:
+    ints = []
+    for word in question.split():
+        if word not in questions_vocab_to_int:
+            ints.append(questions_vocab_to_int['<UNK>'])
+        else:
+            ints.append(questions_vocab_to_int[word])
+    questions_int.append(ints)
+answers_int = []
+for answer in short_answers:
+    ints = []
+    for word in answer.split():
+        if word not in answers_vocab_to_int:
+            ints.append(answers_vocab_to_int['<UNK>'])
+        else:
+            ints.append(answers_vocab_to_int[word])
+    answers_int.append(ints)
+
+#debug to check the lengths
+print(len(questions_int))
+print(len(answers_int))
+
+#calculation to determine what percentage of words are unknown and replaced with unk
+word_count = 0
+unk_count = 0
+
+for question in questions_int:
+    for word in question:
+        if word == questions_vocab_to_int["<UNK>"]:
+            unk_count += 1
+        word_count += 1
+for answer in answers_int:
+    for word in answer:
+        if word == answers_vocab_to_int["<UNK>"]:
+            unk_count += 1
+        word_count += 1
+
+unk_ratio = round(unk_count/word_count,4)*100
+print("Total number of words:", word_count)
+print("Number of times <UNK> is used:", unk_count)
+print("Percent of words that are <UNK>: {}%".format(round(unk_ratio,3)))
