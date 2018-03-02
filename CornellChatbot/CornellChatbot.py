@@ -48,7 +48,7 @@ print(f"Answer Length:",len(answers))
 
 def textcleanup(text):
 #cleansup text by removing unnecessary characters like is and reformats.
-
+    #Returns the string obtained by replacing the leftmost non-overlapping occurrences of pattern in the string
     text = text.lower()
 
     text = re.sub(r"i'm", "i am", text)
@@ -122,7 +122,7 @@ for question in clean_questions:
 # Filter out the answers that are too short/long
 short_questions = []
 short_answers = []
- 
+
 i = 0
 for answer in short_answers_temp:
     if len(answer.split()) >= min_line_length and len(answer.split()) <= max_line_length:
@@ -134,4 +134,69 @@ print("Number of answers:", len(short_answers))
 print("% of data used: {}%".format(round(len(short_questions)/len(questions),4)*100))
 
 
-#vocab
+#dictionary of frequently used vocab words
+vocab = {}
+for question in short_questions:
+    for word in question.split():
+        if word not in vocab:
+            vocab[word] = 1
+        else:
+            vocab[word] += 1
+for answer in short_answers:
+    for word in answer.split():
+        if word not in vocab:
+            vocab[word] = 1
+        else:
+            vocab[word] += 1
+
+# Remove rare words from the vocabulary.
+#aims to replace fewer than 5% of words with <UNK>
+threshold = 10
+count = 0
+for k,v in vocab.items():
+    if v >= threshold:
+        count += 1
+
+print("Size of total vocab:", len(vocab))
+print("Size of vocab that will be used:", count)
+
+# In case you want to use a different vocabulary size for the source and target text,
+# we can set different threshold values.
+# however, dictionaries will still be created to provide a unique integer for each word.
+questions_vocab_to_int = {}
+
+word_num = 0
+for word, count in vocab.items():
+    if count >= threshold:
+        questions_vocab_to_int[word] = word_num
+        word_num += 1
+
+answers_vocab_to_int = {}
+
+word_num = 0
+for word, count in vocab.items():
+    if count >= threshold:
+        answers_vocab_to_int[word] = word_num
+        word_num += 1
+
+#custom tokens for vocab dictionaries
+# PAD = FILLER
+# EOS = END OF STRING
+# UNK = UNKNOWN/WORD NOT IN VOCABUALRY
+# GO = START DECODING
+
+codes = ['<PAD>','<EOS>','<UNK>','<GO>']
+
+for code in codes:
+    questions_vocab_to_int[code] = len(questions_vocab_to_int)+1
+for code in codes:
+    answers_vocab_to_int[code] = len(answers_vocab_to_int)+1
+
+#creat a dictinare to map unique ints to their corresponding words
+questions_int_to_vocab = {v_i: v for v, v_i in questions_vocab_to_int.items()}
+answers_int_to_vocab = {v_i: v for v, v_i in answers_vocab_to_int.items()}
+#debug check length
+print(len(questions_vocab_to_int))
+print(len(questions_int_to_vocab))
+print(len(answers_vocab_to_int))
+print(len(answers_int_to_vocab))
