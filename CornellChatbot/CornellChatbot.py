@@ -88,3 +88,13 @@ for i in range(limit, limit+5):
     print(clean_questions[i])
     print(clean_answers[i])
     print()
+
+# Find the length of sentences
+lengths = []
+for question in clean_questions:
+    lengths.append(len(question.split()))
+for answer in clean_answers:
+    lengths.append(len(answer.split()))
+
+# Creates a dataframe so that the values can be inspected
+lengths = pd.DataFrame(lengths, columns=['counts'])
