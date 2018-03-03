@@ -256,3 +256,22 @@ unk_ratio = round(unk_count/word_count,4)*100
 print("Total number of words:", word_count)
 print("Number of times <UNK> is used:", unk_count)
 print("Percent of words that are <UNK>: {}%".format(round(unk_ratio,3)))
+
+#answer/question sorting section begins here:
+#they will be sorted by length
+#this is done to redice the amount of padding when training with datasets
+#this is done in an effort to speed up the training process
+sorted_questions = []
+sorted_answers = []
+
+for length in range(1, max_line_length+1):
+    for i in enumerate(questions_int):
+        if len(i[1]) == length:
+            sorted_questions.append(questions_int[i[0]])
+            sorted_answers.append(answers_int[i[0]])
+print(f"Sorted question length:",len(sorted_questions))
+print(f"Sorted answer length:",len(sorted_answers),'\n')
+for i in range(3):
+    print(sorted_questions[i])
+    print(sorted_answers[i])
+    print()
