@@ -6,15 +6,28 @@ bot = ChatBot(
     output_adapter='chatterbot.output.TerminalAdapter',
     logic_adapters=[
         'chatterbot.logic.MathematicalEvaluation',
-        'chatterbot.logic.TimeLogicAdapter'
+        'chatterbot.logic.TimeLogicAdapter',
+        {
+            'import_path': 'chatterbot.logic.BestMatch'
+        },
+        {
+            'import_path': 'chatterbot.logic.LowConfidenceAdapter',
+            'threshold': 0.65,
+            'default_response': 'I am sorry, but I do not understand.'
+        }
     ],
-    database='./database.sqlite3'
-)
+    trainer='chatterbot.trainers.ListTrainer',
 
+    database='./database.sqlite3',
+)
+bot.train([
+    'hello',
+    'hi',
+])
 while True:
     try:
      print("---<Ask TARS a question>---")
      bot_input = bot.get_response(None)
 
     except(KeyboardInterrupt, EOFError, SystemExit):
-        break
+        breaks

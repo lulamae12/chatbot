@@ -324,7 +324,8 @@ def decoding_layer_train(encoder_state, dec_cell, dec_embed_input, sequence_leng
 
     attention_states = tf.zeros([batch_size, 1, dec_cell.output_size])#tfzeros creates a tensor with all elements set to 0
 
-     att_keys, att_vals, att_score_fn, att_construct_fn =             tf.contrib.seq2seq.prepare_attention(attention_states,
+    att_keys, att_vals, att_score_fn, att_construct_fn = \
+            tf.contrib.seq2seq.prepare_attention(attention_states,
                                                  attention_option="bahdanau",#see top of def
                                                  num_units=dec_cell.output_size)
 
