@@ -275,3 +275,167 @@ for i in range(3):
     print(sorted_questions[i])
     print(sorted_answers[i])
     print()
+
+
+#begin Tensorflow
+#for future refrence, the tensorflow python api is located here:https://www.tensorflow.org/api_docs/python/
+
+#A tensor is a generalization of vectors and matrices to potentially higher dimensions.
+#Internally, TensorFlow represents tensors as n-dimensional arrays of base datatypes.
+
+#nonverbose definition of a tensor: tensors are arrays of numbers or functions that can transform based on certain rules.
+def model_inputs():
+    '''Create placeholders for inputs to the model'''
+    input_data = tf.placeholder(tf.int32, [None,None], name='input')#tf.placeholder Inserts a placeholder for a tensor that will be always fed.
+    targets = tf.placeholder(tf.int32, [None, None], name='targets')
+    lr = tf.placeholder(tf.float32, name='learning_rate')#learning_rate variable is created
+    keep_prob = tf.placeholder(tf.float32, name='keep_prob')#keep_prob is made to keep probabilty
+
+    return input_data, targets, lr, keep_prob
+
+def process_encoding_input(target_data, vocab_to_int, batch_size):#converts input so tensor can read it
+    '''Remove the last word id from each batch and concatanate the <GO> to the begining of each batch'''
+    ending = tf.strided_slice(target_data, [0,0], [batch_size, -1], [1, 1])#loops starting at 0,0 and then goes to 1,1
+    dec_input = tf.concat([tf.fill([batch_size, 1], vocab_to_int['<GO>']), ending], 1)
+
+    return dec_input
+
+def encoding_layer(rnn_inputs, rnn_size, num_layers, keep_prob, sequence_length):#rnn is a recurrent neural network. applies filters for recognition.
+    '''Creates the encoding layer'''
+    lstm = tf.contrib.rnn.BasicLSTMCell(rnn_size)#Long Short Term Memory networks or “LSTMs” – are a special kind of RNN, capable of learning long-term dependencies.
+    drop = tf.contrib.rnn.DropoutWrapper(lstm, input_keep_prob = keep_prob)
+    enc_cell = tf.contrib.rnn.MultiRNNCell([drop] * num_layers)#cells act kind of like a conveyor becasue they help keep the network moving through LSTMSs
+    _, enc_state = tf.nn.bidirectional_dynamic_rnn(cell_fw = enc_cell,#cell forward, moves forward a cell in the graph
+                                                   cell_bw = enc_cell,#cell backward, moves back a cell in the graph
+                                                   sequence_length = sequence_length,
+                                                   inputs = rnn_inputs,
+                                                   dtype=tf.float32)
+    return enc_state
+
+
+#trains decoing layer
+#the attention mechanism is the way to pay attention to certain parts of data so it dosent have to rely on a single thing. this allows the decoder to select any part of the sentence sepednming on the situation.
+#there are 2 diffrent types of seq2seq attention models for tensorflow, luong attention and bahdanau attention, whihic is the one that is being used in this program
+#this program uses bahdanau becasue it can read layers that are hidden and it can read them forward or backward which gives it a better chance at interpreting text and responding with the appropriate text correctlly.
+
+def decoding_layer_train(encoder_state, dec_cell, dec_embed_input, sequence_length, decoding_scope,
+                        output_fn, keep_prob, batch_size):
+    '''decodes the training data'''
+
+    attention_states = tf.zeros([batch_size, 1, dec_cell.output_size])#tfzeros creates a tensor with all elements set to 0
+
+    att_keys, att_vals, att_score_fn, att_construct_fn = \
+            tf.contrib.seq2seq.prepare_attention(attention_states,
+                                                 attention_option="bahdanau",#see top of def
+                                                 num_units=dec_cell.output_size)
+
+    train_decoder_fn = tf.contrib.seq2seq.attention_decoder_fn_train(encoder_state[0],#seq2seq is a module for dyanmic decoding
+                                                                     att_keys,
+                                                                     att_vals,
+                                                                     att_score_fn,
+                                                                     att_construct_fn,
+                                                                     name = "attn_dec_train")
+    train_pred, _, _ = tf.contrib.seq2seq.dynamic_rnn_decoder(dec_cell,
+                                                              train_decoder_fn,
+                                                              dec_embed_input,
+                                                              sequence_length,
+                                                              scope=decoding_scope)
+    train_pred_drop = tf.nn.dropout(train_pred, keep_prob)
+    return output_fn(train_pred_drop)
+#logits are a function that infer probabilties
+def decoding_layer_infer(encoder_state, dec_cell, dec_embeddings, start_of_sequence_id, end_of_sequence_id,
+                         maximum_length, vocab_size, decoding_scope, output_fn, keep_prob, batch_size):
+    '''Decodes the prediction data'''
+
+    attention_states = tf.zeros([batch_size, 1, dec_cell.output_size])
+
+    att_keys, att_vals, att_score_fn, att_construct_fn = \
+            tf.contrib.seq2seq.prepare_attention(attention_states,
+                                                 attention_option="bahdanau",#see top of above def
+                                                 num_units=dec_cell.output_size)
+
+    infer_decoder_fn = tf.contrib.seq2seq.attention_decoder_fn_inference(output_fn,
+                                                                         encoder_state[0],
+                                                                         att_keys,
+                                                                         att_vals,
+                                                                         att_score_fn,
+                                                                         att_construct_fn,
+                                                                         dec_embeddings,
+                                                                         start_of_sequence_id,
+                                                                         end_of_sequence_id,
+                                                                         maximum_length,
+                                                                         vocab_size,
+                                                                         name = "attn_dec_inf")
+    infer_logits, _, _ = tf.contrib.seq2seq.dynamic_rnn_decoder(dec_cell,
+                                                                infer_decoder_fn,
+                                                                scope=decoding_scope)
+
+    return infer_logits
+def decoding_layer(dec_embed_input, dec_embeddings, encoder_state, vocab_size, sequence_length, rnn_size,
+                   num_layers, vocab_to_int, keep_prob, batch_size):
+    '''Creates the decoding cell and input the parameters for the training and inference decoding layers'''
+
+    with tf.variable_scope("decoding") as decoding_scope:
+        lstm = tf.contrib.rnn.BasicLSTMCell(rnn_size)
+        drop = tf.contrib.rnn.DropoutWrapper(lstm, input_keep_prob = keep_prob)
+        dec_cell = tf.contrib.rnn.MultiRNNCell([drop] * num_layers)
+
+        weights = tf.truncated_normal_initializer(stddev=0.1)#weight refers to the strength or amplitude of a connection between two nodes or "tensors" in this case
+        biases = tf.zeros_initializer()#pretty self explanotory. allows the program to lean to one side of two options based on parameters
+        output_fn = lambda x: tf.contrib.layers.fully_connected(x, #inpython lambda allows creation of anon functions.
+                                                                vocab_size,
+                                                                None,
+                                                                scope=decoding_scope,
+                                                                weights_initializer = weights,
+                                                                biases_initializer = biases)
+
+        train_logits = decoding_layer_train(encoder_state,
+                                            dec_cell,
+                                            dec_embed_input,
+                                            sequence_length,
+                                            decoding_scope,
+                                            output_fn,
+                                            keep_prob,
+                                            batch_size)
+        decoding_scope.reuse_variables()
+        infer_logits = decoding_layer_infer(encoder_state,
+                                            dec_cell,
+                                            dec_embeddings,
+                                            vocab_to_int['<GO>'],
+                                            vocab_to_int['<EOS>'],
+                                            sequence_length - 1,
+                                            vocab_size,
+                                            decoding_scope,
+                                            output_fn, keep_prob,
+                                            batch_size)
+
+    return train_logits, infer_logits
+    #very simialr to previous
+def seq2seq_model(input_data, target_data, keep_prob, batch_size, sequence_length, answers_vocab_size,
+                  questions_vocab_size, enc_embedding_size, dec_embedding_size, rnn_size, num_layers,
+                  questions_vocab_to_int):
+
+    '''Use the previous functions to create the training and inference logits'''
+
+    enc_embed_input = tf.contrib.layers.embed_sequence(input_data,
+                                                       answers_vocab_size+1,
+                                                       enc_embedding_size,
+                                                       initializer = tf.random_uniform_initializer(0,1))
+    #encoding state based on layer
+    enc_state = encoding_layer(enc_embed_input, rnn_size, num_layers, keep_prob, sequence_length)
+
+    dec_input = process_encoding_input(target_data, questions_vocab_to_int, batch_size)
+    dec_embeddings = tf.Variable(tf.random_uniform([questions_vocab_size+1, dec_embedding_size], 0, 1))
+    dec_embed_input = tf.nn.embedding_lookup(dec_embeddings, dec_input)
+
+    train_logits, infer_logits = decoding_layer(dec_embed_input,
+                                                dec_embeddings,
+                                                enc_state,
+                                                questions_vocab_size,
+                                                sequence_length,
+                                                rnn_size,
+                                                num_layers,
+                                                questions_vocab_to_int,
+                                                keep_prob,
+                                                batch_size)
+    return train_logits, infer_logits
